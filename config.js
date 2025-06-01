@@ -13,7 +13,7 @@ const config = {
     // Server settings (for future use)
     server: {
         port: 3000,
-        host: 'localhost'
+        host: '0.0.0.0'  // Changed from 'localhost' to listen on all interfaces
     },
     
     // Application settings (for future use)

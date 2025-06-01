@@ -12,6 +12,8 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "dateformat": "^5.0.3",
     "express": "^5.1.0",
-    "onvif": "^0.8.0"
+    "jsmpeg-player": "^3.0.3",
+    "onvif": "^0.8.0",
+    "ws": "^8.18.2"
   }
 }

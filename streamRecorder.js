@@ -54,6 +54,31 @@ class StreamRecorder {
         });
     }
 
+    generateThumbnail(videoPath, callback) {
+        const thumbnailPath = videoPath.replace('.mp4', '.jpg');
+        const args = [
+            '-i', videoPath,
+            '-vf', 'thumbnail,scale=640:360',
+            '-frames:v', '1',
+            thumbnailPath
+        ];
+
+        const thumbnailProcess = spawn(ffmpegInstaller.path, args);
+
+        thumbnailProcess.on('close', (code) => {
+            if (code === 0) {
+                this.log('Thumbnail generated successfully');
+                callback(null, thumbnailPath);
+            } else {
+                callback(new Error(`Thumbnail generation failed with code ${code}`));
+            }
+        });
+
+        thumbnailProcess.on('error', (err) => {
+            callback(err);
+        });
+    }
+
     convertToMp4(inputPath, callback) {
         const outputPath = inputPath.replace(/\.[^.]+$/, '.mp4');
         const args = [
@@ -65,10 +90,6 @@ class StreamRecorder {
 
         const convertProcess = spawn(ffmpegInstaller.path, args);
 
-        convertProcess.stderr.on('data', (data) => {
-            this.log('Converting: ' + data.toString());
-        });
-
         convertProcess.on('close', (code) => {
             if (code === 0) {
                 this.log('Conversion completed successfully');
@@ -76,8 +97,16 @@ class StreamRecorder {
                 fs.unlink(inputPath, (err) => {
                     if (err) {
                         this.log('Error deleting original file: ' + err);
+                        return callback(err);
                     }
-                    callback(null, outputPath);
+                    // Generate thumbnail after successful conversion
+                    this.generateThumbnail(outputPath, (err) => {
+                        if (err) {
+                            this.log('Thumbnail generation error: ' + err);
+                            // Continue even if thumbnail generation fails
+                        }
+                        callback(null, outputPath);
+                    });
                 });
             } else {
                 callback(new Error(`Conversion failed with code ${code}`));
