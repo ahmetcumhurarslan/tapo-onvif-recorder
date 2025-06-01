@@ -1,0 +1,89 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 1px solid #333;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+.date-section {
+    margin-bottom: 40px;
+}
+
+.date-header {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #fff;
+    background: #333;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.camera-section {
+    margin-bottom: 30px;
+}
+
+.camera-header {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #0af;
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 15px;
+}
+
+.video-card {
+    background: #262626;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.video-card video {
+    width: 100%;
+    height: 200px;
+    background: #000;
+}
+
+.video-info {
+    padding: 10px;
+}
+
+.video-title {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #fff;
+}
+
+.video-date {
+    font-size: 12px;
+    color: #888;
+}
+
+.video-time {
+    font-size: 14px;
+    color: #ccc;
+}

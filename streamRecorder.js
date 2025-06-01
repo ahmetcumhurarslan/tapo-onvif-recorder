@@ -1,0 +1,119 @@
+// recorder.js
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+class StreamRecorder {
+    constructor(options) {
+        this.options = options || { username: 'StreamRecorder' };
+        this.ffmpegProcess = null;
+    }
+
+    startRecording(rtspUrl, outputPath, callback) {
+        if (this.ffmpegProcess) {
+            return callback(new Error('Recording already in progress'));
+        }
+
+        fs.mkdir(path.dirname(outputPath), { recursive: true }, (err) => {
+            if (err) return callback(err);
+
+            var args = [
+                "-y",
+                "-rtsp_transport", "tcp",
+                "-use_wallclock_as_timestamps", "1",  // Duvar saati zaman damgasını kullan
+                "-i", rtspUrl,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-f", "matroska",
+                outputPath
+            ];
+
+            this.ffmpegProcess = spawn(ffmpegInstaller.path, args);
+
+            let started = false;
+
+            this.ffmpegProcess.stderr.on('data', (data) => {
+                const msg = data.toString();
+                if (!started && msg.includes('Press [q] to stop')) {
+                    started = true;
+                    this.log('Recording started for ' + rtspUrl);
+                    callback(null);
+                }
+            });
+
+            this.ffmpegProcess.on('close', (code, signal) => {
+                this.log(`Recording ended (code: ${code}, signal: ${signal})`);
+                this.ffmpegProcess = null;
+            });
+
+            this.ffmpegProcess.on('error', (err) => {
+                this.ffmpegProcess = null;
+                callback(err);
+            });
+        });
+    }
+
+    convertToMp4(inputPath, callback) {
+        const outputPath = inputPath.replace(/\.[^.]+$/, '.mp4');
+        const args = [
+            '-i', inputPath,
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            outputPath
+        ];
+
+        const convertProcess = spawn(ffmpegInstaller.path, args);
+
+        convertProcess.stderr.on('data', (data) => {
+            this.log('Converting: ' + data.toString());
+        });
+
+        convertProcess.on('close', (code) => {
+            if (code === 0) {
+                this.log('Conversion completed successfully');
+                // Delete the original file
+                fs.unlink(inputPath, (err) => {
+                    if (err) {
+                        this.log('Error deleting original file: ' + err);
+                    }
+                    callback(null, outputPath);
+                });
+            } else {
+                callback(new Error(`Conversion failed with code ${code}`));
+            }
+        });
+
+        convertProcess.on('error', (err) => {
+            callback(err);
+        });
+    }
+
+    stopRecording(callback) {
+        if (!this.ffmpegProcess) {
+            return callback(null);
+        }
+
+        const currentOutput = this.ffmpegProcess.spawnargs[this.ffmpegProcess.spawnargs.length - 1];
+
+        this.ffmpegProcess.once('close', () => {
+            this.log('Recording stopped');
+            // Convert to MP4 after stopping
+            this.convertToMp4(currentOutput, (err, outputPath) => {
+                if (err) {
+                    this.log('Conversion error: ' + err);
+                    return callback(err);
+                }
+                callback(null, outputPath);
+            });
+        });
+
+        this.ffmpegProcess.kill('SIGINT');
+    }
+
+    log(message) {
+        console.log(`[${this.options.username}] ${message}`);
+    }
+}
+
+module.exports = StreamRecorder;
