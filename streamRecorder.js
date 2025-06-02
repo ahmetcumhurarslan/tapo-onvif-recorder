@@ -3,6 +3,7 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { customLog } = require('./config');
 
 class StreamRecorder {
     constructor(options) {
@@ -140,8 +141,8 @@ class StreamRecorder {
         this.ffmpegProcess.kill('SIGINT');
     }
 
-    log(message) {
-        console.log(`[${this.options.username}] ${message}`);
+    log(...message) {
+        customLog(`[${this.options.username}]`, ...message);
     }
 }
 

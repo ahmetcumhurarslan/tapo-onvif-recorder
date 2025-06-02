@@ -1,4 +1,6 @@
 const { Cam } = require('onvif');
+const { customLog } = require('./config');
+
 
 class C320WSEventMonitor extends Cam {
     constructor(config, callback) {
@@ -108,8 +110,8 @@ class C320WSEventMonitor extends Cam {
         });
     }
 
-    log(message) {
-        console.log(`[${this.options.username}] ${message}`);
+    log(...message) {
+        customLog(`[${this.options.username}]`, ...message);
     }
 
 }

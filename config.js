@@ -1,3 +1,5 @@
+const dateFormat = require('dateformat').default;
+
 const config = {
     // Camera configurations
     cameras: [
@@ -9,17 +11,25 @@ const config = {
             timeout: 5000
         }
     ],
-    
+
     // Server settings (for future use)
     server: {
         port: 3000,
         host: '0.0.0.0'  // Changed from 'localhost' to listen on all interfaces
     },
-    
+
     // Application settings (for future use)
     app: {
         recordingsPath: './recordings'
-    }
+    },
+
 };
 
-module.exports = config;
+const customLog = (...message) => {
+    console.log(`[${dateFormat(new Date(), "d mmmm yyyy HH:MM:ss")}]`, ...message);
+};
+
+module.exports = {
+    ...config,
+    customLog
+};

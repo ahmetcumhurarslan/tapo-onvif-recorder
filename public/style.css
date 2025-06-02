@@ -272,6 +272,52 @@ h1 {
     background: #0066cc;
 }
 
+/* Logs page styles */
+.logs-container {
+    background: #262626;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.logs-content {
+    background: #1a1a1a;
+    border-radius: 4px;
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.log-entry {
+    padding: 4px 8px;
+    border-bottom: 1px solid #333;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.refresh-button {
+    background: #0066cc;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 15px;
+    transition: background 0.2s;
+}
+
+.refresh-button:hover {
+    background: #0052a3;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 768px) {
     .container {

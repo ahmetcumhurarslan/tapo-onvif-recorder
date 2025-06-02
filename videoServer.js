@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
-const config = require('./config');
+const { customLog, ...config } = require('./config');
 
 const app = express();
 
@@ -66,17 +66,28 @@ app.get('/api/streams', (req, res) => {
 });
 */
 
+app.get('/api/logs', async (req, res) => {
+    try {
+        const logPath = path.join(os.homedir(), '.pm2/logs/tapo-onvif-recorder-out.log');
+        const logs = await fs.readFile(logPath, 'utf8');
+        res.json({ logs: logs.split('\n').reverse() });
+    } catch (error) {
+        console.error('Error reading logs:', error);
+        res.status(500).json({ error: 'Failed to read logs' });
+    }
+});
+
 app.use('/videos', express.static(config.app.recordingsPath));
 
 const server = app.listen(config.server.port, config.server.host, () => {
-    console.log('\nServer is running on:');
-    console.log(`Local: http://localhost:${config.server.port}`);
+    customLog("[video server]",'Server is running on:');
+    customLog("[video server]",`Local: http://localhost:${config.server.port}`);
     
     const networkAddresses = getLocalIpAddresses();
     networkAddresses.forEach(ip => {
-        console.log(`Network: http://${ip}:${config.server.port}`);
+        customLog("[video server]",`Network: http://${ip}:${config.server.port}`);
     });
-    console.log('\nUse any of these addresses to access from other computers on the LAN');
+    customLog("[video server]",'Use any of these addresses to access from other computers on the LAN');
 });
 
 function getLocalIpAddresses() {
@@ -94,9 +105,9 @@ function getLocalIpAddresses() {
 }
 
 process.on('SIGINT', () => {
-    console.log('\nShutting down server...');
+    customLog("[video server]",'Shutting down server...');
     server.close(() => {
-        console.log('Server closed');
+        customLog("[video server]",'Server closed');
         process.exit(0);
     });
 });

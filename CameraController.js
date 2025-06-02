@@ -2,7 +2,7 @@ const C320WSEventMonitor = require('./C320WSEventMonitor');
 const fs = require('fs');
 const dateFormat = require('dateformat').default;  // Changed to import default export
 const StreamRecorder = require('./streamRecorder'); // Assuming you have a streamRecorder module
-const config = require('./config');
+const { customLog, ...config } = require('./config');
 
 class CameraController {
     constructor(options) {
@@ -145,7 +145,7 @@ class CameraController {
     }
 
     connectionErrorCallback(error) {
-        console.error('❌ Connection error:', error);
+        this.log('❌ Connection error:', error);
     }
 
     startRecording() {
@@ -185,8 +185,8 @@ class CameraController {
         });
     }
 
-    log(message) {
-        console.log(`[${this.options.username}] ${message}`);
+    log(...message) {
+        customLog(`[${this.options.username}]`, ...message);
     }
 
 }

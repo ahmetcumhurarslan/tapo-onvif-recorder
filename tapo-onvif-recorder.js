@@ -6,10 +6,6 @@ var cameraControllers = [];
 
 
 process.on('SIGINT', async () => {
-    // Clean up FFmpeg processes
-    for (const ffmpeg of ffmpegProcesses.values()) {
-        ffmpeg.kill();
-    }
     for (const cameraController of cameraControllers) {
         await cameraController.stop();
     }
