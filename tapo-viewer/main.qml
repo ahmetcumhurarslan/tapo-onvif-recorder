@@ -142,7 +142,7 @@ Window {
             anchors.horizontalCenter: parent.horizontalCenter
             height: dp(40)
             background: Rectangle{}
-            text: "localhost:3000"
+            text: "http://localhost:3000"
         }
 
     }
