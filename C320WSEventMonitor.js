@@ -111,7 +111,7 @@ class C320WSEventMonitor extends Cam {
     }
 
     log(...message) {
-        customLog(`[${this.options.username}]`, ...message);
+        customLog(`[${this.options.name}]`, ...message);
     }
 
 }

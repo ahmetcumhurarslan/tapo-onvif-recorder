@@ -155,7 +155,7 @@ class CameraController {
         filePath += "/"
         filePath += dateFormat(d, "yyyy.mm.dd");
         filePath += "/"
-        filePath += this.options.username;
+        filePath += this.options.name;
 
         // Ensure directory exists
         if (!fs.existsSync(filePath)) {
@@ -186,7 +186,7 @@ class CameraController {
     }
 
     log(...message) {
-        customLog(`[${this.options.username}]`, ...message);
+        customLog(`[${this.options.name}]`, ...message);
     }
 
 }

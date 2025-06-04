@@ -7,7 +7,7 @@ const { customLog } = require('./config');
 
 class StreamRecorder {
     constructor(options) {
-        this.options = options || { username: 'StreamRecorder' };
+        this.options = options || { name: 'StreamRecorder' };
         this.ffmpegProcess = null;
     }
 
@@ -142,7 +142,7 @@ class StreamRecorder {
     }
 
     log(...message) {
-        customLog(`[${this.options.username}]`, ...message);
+        customLog(`[${this.options.name}]`, ...message);
     }
 }
 
