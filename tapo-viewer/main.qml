@@ -37,6 +37,15 @@ Window {
         width: parent.width
         height: dp(50)
 
+        Text{
+            text: "Tapo Viewer"
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            anchors.fill: parent
+            font.pointSize: dp(18)
+            font.bold: true
+        }
+
         //menu icon
         Item{
             height: dp(28)
@@ -108,6 +117,7 @@ Window {
                 t: qsTr("Canlı Yayın"),
                 c: "darkblue",
                 f: function(){
+                    mainLoader.sourceComponent = undefined
                     mainLoader.sourceComponent = liveFeeds
                     topMenu.close()
                 }
@@ -116,6 +126,7 @@ Window {
                 t: qsTr("Kayıtlar"),
                 c: "darkblue",
                 f: function(){
+                    mainLoader.sourceComponent = undefined
                     mainLoader.sourceComponent = records
                     topMenu.close()
                 }

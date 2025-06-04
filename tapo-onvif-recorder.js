@@ -19,3 +19,16 @@ for (const cameraConfig of config.cameras) {
     const cameraController = new CameraController(cameraConfig);
     cameraControllers.push(cameraController);
 }
+
+videoServer.getStreamsFunction = () => {
+    console.log("Getting streams from camera controllers...");
+    var streams = [];
+    for (const cameraController of cameraControllers) {
+       var info = {
+            source: cameraController.streamUri,
+            name: cameraController.options.name
+       }
+       streams.push(info);
+    }
+    return streams;
+}

@@ -8,10 +8,43 @@ import QtQuick.Controls.Material
 Item {
     anchors.fill: parent
 
+    Component.onCompleted: {
+        streamsTimer.restart()
+    }
+
+    Timer{
+        id: streamsTimer
+        interval: 100
+        onTriggered: {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", settings.backendIp + '/api/streams');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                    console.log("GET response:", xhr.responseText);
+                    try{
+                        streamsModel.clear()
+                        var json = JSON.parse(xhr.responseText)
+                        for(var i=0;i<json.length;i++){
+                            streamsModel.append(json[i])
+                        }
+                    }
+                    catch(e){
+                        console.log("error parsing response")
+                    }
+                }
+            };
+            xhr.send();
+        }
+    }
+
+    ListModel{
+        id: streamsModel
+    }
+
     ListView {
 
         anchors.fill: parent
-        model: mediaJSON
+        model: streamsModel
         spacing: dp(20)
         bottomMargin: dp(10)
         clip: true
@@ -58,7 +91,7 @@ Item {
 
                     MediaPlayer {
                         id: player
-                        source: mediaJSON[index].sources[0]
+                        source: model.source ? model.source: ""
                         videoOutput: videoOutput
                         autoPlay: true
                     }
@@ -66,19 +99,10 @@ Item {
 
                 Text {
                     Layout.fillWidth: true
-                    text: mediaJSON[index].title
+                    text: model.name ? model.name : ""
                     font.pixelSize: dp(16)
                     font.bold: true
                     color: "#333"
-                    horizontalAlignment: Text.AlignHCenter
-                }
-
-                Text {
-                    Layout.fillWidth: true
-                    text: mediaJSON[index].subtitle
-                    font.pixelSize: dp(12)
-                    color: "#777"
-                    wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }
             }
@@ -86,11 +110,12 @@ Item {
     }
 
     property var mediaJSON: [
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" ], "subtitle": "By Blender Foundation", "thumb": "images/BigBuckBunny.jpg", "title": "Big Buck Bunny" },
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" ], "subtitle": "By Blender Foundation", "thumb": "images/ElephantsDream.jpg", "title": "Elephant Dream" },
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" ], "subtitle": "By Google", "thumb": "images/ForBiggerBlazes.jpg", "title": "For Bigger Blazes" },
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" ], "subtitle": "By Google", "thumb": "images/ForBiggerEscapes.jpg", "title": "For Bigger Escape" },
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" ], "subtitle": "By Google", "thumb": "images/ForBiggerFun.jpg", "title": "For Bigger Fun" },
-        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" ], "subtitle": "By Google", "thumb": "images/ForBiggerJoyrides.jpg", "title": "For Bigger Joyrides" }
+        { "description": "...", "sources": [ "rtsp://bahce-1:bahce123@192.168.2.5:554/stream1" ], "name": "By Blender Foundation", "thumb": "images/BigBuckBunny.jpg", "title": "Big Buck Bunny" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" ], "name": "By Blender Foundation", "thumb": "images/BigBuckBunny.jpg", "title": "Big Buck Bunny" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4" ], "name": "By Blender Foundation", "thumb": "images/ElephantsDream.jpg", "title": "Elephant Dream" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" ], "name": "By Google", "thumb": "images/ForBiggerBlazes.jpg", "title": "For Bigger Blazes" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" ], "name": "By Google", "thumb": "images/ForBiggerEscapes.jpg", "title": "For Bigger Escape" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" ], "name": "By Google", "thumb": "images/ForBiggerFun.jpg", "title": "For Bigger Fun" },
+        { "description": "...", "sources": [ "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4" ], "name": "By Google", "thumb": "images/ForBiggerJoyrides.jpg", "title": "For Bigger Joyrides" }
     ]
 }

@@ -140,3 +140,4 @@ recordings/
 config.js
 
 *.pro.user
+build/

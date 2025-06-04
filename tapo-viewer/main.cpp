@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     // Set environment variables first
     qputenv("QT_MEDIA_BACKEND", "ffmpeg");
-    qputenv("QT_DEBUG_PLUGINS", "1");
+    //qputenv("QT_DEBUG_PLUGINS", "1");
     qputenv("QT_WEBVIEW_PLUGIN", "native");
 
     // Try initializing with explicit backend
