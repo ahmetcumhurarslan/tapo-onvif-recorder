@@ -117,7 +117,7 @@ class CameraController {
 
     controlConnection() {
         const timeout = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timeout')), 1000)
+            setTimeout(() => reject(new Error('Connection timeout')), 4000)
         );
 
         const connectionCheck = new Promise((resolve, reject) => {
@@ -137,11 +137,11 @@ class CameraController {
 
     connectedCallback() {
         this.log("");
-        this.log('✅ Connected to C320WS camera');
+        this.log('✅ Connected to camera');
     }
 
     disconnectedCallback() {
-        this.log('❌ Disconnected from C320WS camera');
+        this.log('❌ Disconnected from camera');
     }
 
     connectionErrorCallback(error) {

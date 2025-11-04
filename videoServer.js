@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
 const { customLog, ...config } = require('./config');
+const cron = require('node-cron');
 
 const app = express();
 
@@ -104,6 +105,96 @@ function getLocalIpAddresses() {
     return addresses;
 }
 
+// Compute total size of the recordings folder (bytes). Accept optional root folder.
+async function getRecordingsFolderSize() {
+    async function sizeOf(dir) {
+        let total = 0;
+        try {
+            const entries = await fs.readdir(dir, { withFileTypes: true });
+            for (const entry of entries) {
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    total += await sizeOf(full);
+                } else if (entry.isFile()) {
+                    try {
+                        const stat = await fs.stat(full);
+                        total += stat.size;
+                    } catch (err) {
+                        // ignore individual file errors
+                    }
+                }
+            }
+        } catch (err) {
+            // if folder doesn't exist or other error, return 0
+        }
+        return total;
+    }
+
+    return await sizeOf(config.app.recordingsPath);
+}
+
+async function getOldestDayFolder() {
+    const recordingsRoot = config.app.recordingsPath;
+    try {
+        const entries = await fs.readdir(recordingsRoot, { withFileTypes: true });
+        const folders = [];
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const folderPath = path.resolve(recordingsRoot, entry.name);
+            let stat;
+            try {
+                stat = await fs.stat(folderPath);
+            } catch (err) {
+                continue;
+            }
+            folders.push({ path: folderPath, mtimeMs: stat.mtimeMs});
+        }
+
+        // sort by oldest first
+        folders.sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+        return folders.length > 0 ? folders[0].path : null;
+    } 
+    catch (err) {
+        customLog('[video server]', 'deleteOldestDayFoldersUntilUnderLimit error', err);
+        return null;
+    }
+}
+
+async function controlRecordingsSize() {
+    customLog('[video server]', 'Checking recordings folder size for pruning...');
+    const defaultLimit = 10; // GB
+    const limit = config.app.storageLimit ? config.app.storageLimit : defaultLimit;
+    customLog('[video server]', `Using storage limit: ${limit} GB`);
+    while(await getRecordingsFolderSize() > (limit*1024*1024*1024)){
+        var oldestFolder = await getOldestDayFolder();
+        if(!oldestFolder){
+            break;
+        }
+        try {
+            if (fs.rm) {
+                await fs.rm(oldestFolder, { recursive: true, force: true });
+            } else {
+                await fs.rmdir(oldestFolder, { recursive: true });
+            }
+            customLog('[video server]', `Deleted oldest folder: ${oldestFolder}`);
+        } catch (err) {
+            customLog('[video server]', `Failed to delete folder ${oldestFolder}:`, err);
+            break;
+        }   
+    }
+}
+
+// Schedule controlRecordingsSize to run at 00:00 every day using cron expression
+const timezone = config.app && config.app.timezone ? config.app.timezone : undefined;
+cron.schedule('0 0 * * *', () => {
+    controlRecordingsSize().catch(err => customLog('[video server]', 'Daily prune failed', err));
+}, { scheduled: true, timezone });
+
+// start an immediate check at startup as well
+controlRecordingsSize().catch(err => customLog('[video server]', 'Startup prune failed', err));
+
+
 process.on('SIGINT', () => {
     customLog("[video server]", 'Shutting down server...');
     server.close(() => {
@@ -114,3 +205,4 @@ process.on('SIGINT', () => {
 
 // Export the app for testing or further configuration
 module.exports = app;
+
