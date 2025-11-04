@@ -55,9 +55,17 @@ h1 {
 
 .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 20px;
     padding: 15px;
+}
+
+/* Flexbox-first fallback for older WebKit (iPad2) */
+.video-grid {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 15px;
+    margin: -10px;
 }
 
 .video-card {
@@ -67,6 +75,9 @@ h1 {
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
     position: relative;
+    box-sizing: border-box;
+    width: calc(50% - 20px);
+    margin: 10px;
 }
 
 .video-card:hover {
@@ -382,6 +393,56 @@ h1 {
     }
 }
 
+/* Single column on small phones */
+@media (max-width: 480px) {
+    .video-card {
+        width: 100%;
+        margin: 8px 0;
+    }
+    .video-grid {
+        padding: 10px;
+        margin: 0;
+    }
+}
+
+/* Old iPad/tablet range: force 4 columns for older WebKit (flexbox fallback) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .video-card {
+        width: calc(25% - 20px);
+        margin: 10px;
+    }
+    .video-grid {
+        padding: 15px;
+        margin: -10px;
+    }
+}
+
+/* If grid is supported, use 4-column grid in the same tablet range */
+@supports (display: grid) {
+    @media (min-width: 768px) and (max-width: 1024px) {
+        .video-grid {
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 15px;
+        }
+    }
+}
+
+/* Prefer CSS Grid if supported (modern browsers) */
+@supports (display: grid) {
+    .video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+        padding: 15px;
+        margin: 0;
+    }
+    .video-card {
+        width: auto;
+        margin: 0;
+    }
+}
+
 /* Add viewport-specific video controls */
 @media (max-width: 480px) {
     .video-card video::-webkit-media-controls {
@@ -448,4 +509,20 @@ h1 {
 
 .close-modal:hover {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* Tablet (iPad) layout — two columns for widths between 481px and 1024px */
+@media (max-width: 1024px) and (min-width: 481px) {
+    .video-grid {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 16px;
+    }
+    .video-card {
+        /* allow cards to flow nicely in the grid on tablets */
+        max-width: none;
+    }
+    .play-button {
+        width: 48px;
+        height: 48px;
+    }
 }
