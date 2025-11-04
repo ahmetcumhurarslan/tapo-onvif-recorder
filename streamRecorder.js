@@ -57,15 +57,13 @@ class StreamRecorder {
 
     generateThumbnail(videoPath, callback) {
         const thumbnailPath = videoPath.replace('.mp4', '.jpg');
-        const args = [
-            '-i', videoPath,
-            '-vf', 'thumbnail,scale=640:360',
-            '-frames:v', '1',
-            thumbnailPath
-        ];
-
-        this.log("ffmpegInstaller.path:", ffmpegInstaller.path);
-        this.log("args:", args);
+            const args = [
+                '-ss', '1',           // videonun ilk 1. saniyesinden kare al
+                '-i', videoPath,
+                '-vframes', '1',
+                '-vf', 'scale=640:360',
+                thumbnailPath
+            ];
         
         const thumbnailProcess = spawn(ffmpegInstaller.path, args);
 
