@@ -64,7 +64,7 @@ class StreamRecorder {
             thumbnailPath
         ];
 
-        this.log("thumbnail path:", thumbnailPath);
+        this.log("ffmpegInstaller.path:", ffmpegInstaller.path);
         this.log("args:", args);
         
         const thumbnailProcess = spawn(ffmpegInstaller.path, args);
