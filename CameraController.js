@@ -3,6 +3,9 @@ const fs = require('fs');
 const dateFormat = require('dateformat').default;  // Changed to import default export
 const StreamRecorder = require('./streamRecorder'); // Assuming you have a streamRecorder module
 const { customLog, ...config } = require('./config');
+const path = require('path');
+const { spawn } = require('child_process');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
 class CameraController {
     constructor(options) {
@@ -57,22 +60,7 @@ class CameraController {
                     this.cam.startEventMonitoring();
                 }, 5000);
 
-
-                this.cam.getStreamUri({ protocol: 'RTSP' }, (err, stream, xml) => {
-
-                    if (err) {
-                        this.log(err);
-                        this.streamUri = null;
-                    }
-                    else {
-                        var group = stream.uri.split("rtsp://");
-                        this.streamUri = "rtsp://" + this.options.username + ":" + this.options.password + "@" + group[1];
-
-                        this.log('------------------------------');
-                        this.log('Stream: ' + this.streamUri);
-                        this.log('------------------------------');
-                    }
-                });
+                this.streamUri = this.options.streamUri || null;
             }
         });
     }
@@ -184,6 +172,7 @@ class CameraController {
             }
         });
     }
+    
 
     log(...message) {
         customLog(`[${this.options.name}]`, ...message);

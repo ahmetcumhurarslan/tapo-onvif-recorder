@@ -4,6 +4,8 @@ const fs = require('fs').promises;
 const os = require('os');
 const { customLog, ...config } = require('./config');
 const cron = require('node-cron');
+const {listPaths} = require('./mediamtxApi');
+const { spawn } = require('child_process');
 
 const app = express();
 
@@ -51,20 +53,167 @@ app.get('/api/videos', async (req, res) => {
 });
 
 
-app.get('/api/streams', (req, res) => {
+app.get('/api/streams', async (req, res) => {
     try {
-        if (app.getStreamsFunction) {
-            var streams = app.getStreamsFunction();
-            res.json(streams);
+        var pathList = await listPaths();
+        var list = [];
+        for (const p of pathList) {
+            var obj = {};
+            obj.name = p.name;
+            list.push(obj);
         }
-        else {
-            res.json([]);
-        }
+        res.json(list);
     }
     catch (e) {
         res.json([]);
     }
 });
+
+var snapshotWorkers = {};
+var controlSnapshotWorkersActive = false;
+var snapshotPruneIntervalId = null;
+
+function startSnapshotWorker(name) {
+    if (snapshotWorkers[name]) {
+        // refresh last request time
+        snapshotWorkers[name].lastRequestTime = Date.now();
+    } else {
+        // create and start a new worker
+        createSnapshotWorker(name);
+    }
+
+    if (!controlSnapshotWorkersActive) {
+        controlSnapshotWorkers();
+    }
+}
+
+function controlSnapshotWorkers() {
+    if (controlSnapshotWorkersActive) return;
+    controlSnapshotWorkersActive = true;
+    // run prune every 30s to reduce churn
+    snapshotPruneIntervalId = setInterval(() => {
+        pruneSnapshotWorkers();
+    }, 5 * 1000);
+}
+
+function pruneSnapshotWorkers() {
+    console.log("Pruning snapshot workers...");
+    const now = Date.now();
+    for (const name in snapshotWorkers) {
+        try {
+            const wk = snapshotWorkers[name];
+            if (!wk) continue;
+            if (now - wk.lastRequestTime > 10 * 1000) {
+                // terminate ffmpeg process if running and remove worker
+                try {
+                    if (wk.proc) {
+                        try { wk.proc.kill('SIGTERM'); } catch (e) {}
+                        // ensure it's not left
+                        wk.proc = null;
+                    }
+                } catch (e) {}
+                delete snapshotWorkers[name];
+
+                console.log("---------------------------------------")
+                console.log(`Pruned snapshot worker for ${name} due to inactivity`);
+                console.log("---------------------------------------")
+            }
+        } catch (e) {
+            // ignore per-worker errors
+        }
+    }
+}
+
+function createSnapshotWorker(name) {
+    console.log(`Creating snapshot worker for ${name}`);
+    // create a single continuous ffmpeg process that outputs MJPEG frames to stdout at ~1 fps
+    const url = `rtsp://127.0.0.1:8554/${name}`;
+    const worker = {
+        lastRequestTime: Date.now(),
+        snapshot: null,
+        proc: null,
+        restartDelay: 2000
+    };
+
+    // if a previous worker exists, ensure its process is killed before starting a new one
+    if (snapshotWorkers[name] && snapshotWorkers[name].proc) {
+        try { snapshotWorkers[name].proc.kill('SIGTERM'); } catch (e) {}
+        try { snapshotWorkers[name].proc = null; } catch (e) {}
+    }
+
+    snapshotWorkers[name] = worker;
+
+    const ff = spawn('ffmpeg', [
+        '-rtsp_transport', 'tcp',
+        '-loglevel', 'error',
+        '-i', url,
+        '-r', '4',                 // 2 frames per second
+        '-vf', 'scale=300:-1',    // resize frames
+        '-f', 'image2pipe',
+        '-vcodec', 'mjpeg',
+        'pipe:1'
+    ]);
+    worker.proc = ff;
+
+    let buffer = Buffer.alloc(0);
+
+    ff.stdout.on('data', (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+        // extract complete JPEG frames from buffer
+        let start = buffer.indexOf(Buffer.from([0xff, 0xd8]));
+        let end = buffer.indexOf(Buffer.from([0xff, 0xd9]), start + 2);
+        while (start !== -1 && end !== -1) {
+            const frame = buffer.slice(start, end + 2);
+            try {
+                worker.snapshot = `data:image/jpeg;base64,${frame.toString('base64')}`;
+                // reset restart delay on successful frame
+                worker.restartDelay = 2000;
+            } catch (e) {}
+            // copy the remainder to avoid retaining large backing buffer
+            buffer = Buffer.from(buffer.slice(end + 2));
+            start = buffer.indexOf(Buffer.from([0xff, 0xd8]));
+            end = buffer.indexOf(Buffer.from([0xff, 0xd9]), start + 2);
+        }
+    });
+
+    ff.stderr.on('data', (d) => {
+        try { customLog('[video server]', `ffmpeg ${name} stderr: ${d.toString()}`); } catch (e) {}
+    });
+
+    ff.on('close', (code, signal) => {
+        // mark proc gone
+        worker.proc = null;
+        // if worker still exists (not pruned) try to restart after delay with backoff
+        if (snapshotWorkers[name]) {
+            const delay = worker.restartDelay || 2000;
+            setTimeout(() => {
+                if (snapshotWorkers[name]) createSnapshotWorker(name);
+            }, delay);
+            // exponential-ish backoff, cap at 30s
+            worker.restartDelay = Math.min((worker.restartDelay || 2000) * 2.5, 30000);
+        }
+    });
+
+    ff.on('error', (err) => {
+        worker.proc = null;
+        try { customLog('[video server]', `ffmpeg ${name} error: ${err && err.message}`); } catch (e) {}
+    });
+}
+
+app.get('/api/snapshot/:name', async (req, res) => {
+    //console.log("Snapshot request received");
+    const name = req.params.name;
+    if (!name) return res.status(400).json({ error: 'Missing name parameter' });
+    
+    startSnapshotWorker(name);
+    if(snapshotWorkers[name] && snapshotWorkers[name].snapshot){
+        res.json({ snapshot: snapshotWorkers[name].snapshot });
+    }
+    else {
+        const emptyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+        res.json({ snapshot: emptyImage });
+    }
+}); 
 
 
 app.get('/api/logs', async (req, res) => {
@@ -195,8 +344,25 @@ cron.schedule('0 0 * * *', () => {
 controlRecordingsSize().catch(err => customLog('[video server]', 'Startup prune failed', err));
 
 
+
 process.on('SIGINT', () => {
     customLog("[video server]", 'Shutting down server...');
+    // kill any running ffmpeg procs
+    try {
+        for (const name in snapshotWorkers) {
+            try {
+                const wk = snapshotWorkers[name];
+                if (wk && wk.proc) {
+                    try { wk.proc.kill('SIGTERM'); } catch (e) { try { wk.proc.kill('SIGKILL'); } catch (e) {} }
+                    wk.proc = null;
+                }
+            } catch (e) {}
+        }
+    } catch (e) {}
+
+    // clear prune interval
+    try { if (snapshotPruneIntervalId) clearInterval(snapshotPruneIntervalId); } catch (e) {}
+
     server.close(() => {
         customLog("[video server]", 'Server closed');
         process.exit(0);

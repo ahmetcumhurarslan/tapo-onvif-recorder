@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cameras</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    h1 { margin-bottom: 12px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .cam { width: 320px; border: 1px solid #ddd; padding: 8px; box-sizing: border-box; }
+    .cam img { width: 100%; height: auto; background: #000; display: block; }
+    .cam .title { font-size: 14px; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>Cameras</h1>
+  <div id="grid" class="grid"></div>
+
+  <script>
+    (function(){
+      var grid = document.getElementById('grid');
+      var emptyImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=';
+      var intervals = [];
+
+      function httpGetJson(url, cb) {
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try { cb(null, JSON.parse(xhr.responseText)); } catch (e) { cb(e); }
+            } else {
+              cb(new Error('Request failed with status ' + xhr.status));
+            }
+          };
+          xhr.send();
+        } catch (e) { setTimeout(function(){ cb(e); },0); }
+      }
+
+      function createCamElement(name) {
+        var el = document.createElement('div');
+        el.className = 'cam';
+        var title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = name;
+        var img = document.createElement('img');
+        img.src = emptyImage;
+        el.appendChild(title);
+        el.appendChild(img);
+        grid.appendChild(el);
+        return img;
+      }
+
+      function startPolling(name, imgEl) {
+        function fetchOnce() {
+          httpGetJson('/api/snapshot/' + encodeURIComponent(name), function(err, j) {
+            if (!err && j && j.snapshot) {
+              try { imgEl.src = j.snapshot; } catch (e) {}
+            }
+          });
+        }
+        fetchOnce();
+        var id = setInterval(fetchOnce, 250);
+        intervals.push(id);
+      }
+
+      function init() {
+        httpGetJson('/api/streams', function(err, streams) {
+          if (err || !streams || streams.length === 0) {
+            grid.textContent = 'No streams found';
+            return;
+          }
+          for (var i = 0; i < streams.length; i++) {
+            var s = streams[i];
+            if (!s || !s.name) continue;
+            var img = createCamElement(s.name);
+            startPolling(s.name, img);
+          }
+        });
+      }
+
+      window.onload = init;
+      window.onbeforeunload = function() {
+        for (var i = 0; i < intervals.length; i++) {
+          try { clearInterval(intervals[i]); } catch (e) {}
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

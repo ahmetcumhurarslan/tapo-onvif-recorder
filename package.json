@@ -10,10 +10,13 @@
   "description": "",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "axios": "^1.13.2",
     "dateformat": "^5.0.3",
     "express": "^5.1.0",
     "jsmpeg-player": "^3.0.3",
     "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
+    "node-onvif": "^0.1.7",
     "onvif": "^0.8.0",
     "ws": "^8.18.2"
   }
