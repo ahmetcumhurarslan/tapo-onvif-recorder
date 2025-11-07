@@ -6,6 +6,7 @@ const { customLog, ...config } = require('./config');
 const cron = require('node-cron');
 const {listPaths} = require('./mediamtxApi');
 const { spawn } = require('child_process');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
 const app = express();
 
@@ -143,7 +144,7 @@ function createSnapshotWorker(name) {
 
     snapshotWorkers[name] = worker;
 
-    const ff = spawn('ffmpeg', [
+    const ff = spawn(ffmpegInstaller.path, [
         '-rtsp_transport', 'tcp',
         '-loglevel', 'error',
         '-i', url,

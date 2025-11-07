@@ -3,9 +3,6 @@ const fs = require('fs');
 const dateFormat = require('dateformat').default;  // Changed to import default export
 const StreamRecorder = require('./streamRecorder'); // Assuming you have a streamRecorder module
 const { customLog, ...config } = require('./config');
-const path = require('path');
-const { spawn } = require('child_process');
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 
 class CameraController {
     constructor(options) {
