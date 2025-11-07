@@ -98,7 +98,7 @@ function controlSnapshotWorkers() {
 }
 
 function pruneSnapshotWorkers() {
-    console.log("Pruning snapshot workers...");
+//    console.log("Pruning snapshot workers...");
     const now = Date.now();
     for (const name in snapshotWorkers) {
         try {
@@ -149,7 +149,7 @@ function createSnapshotWorker(name) {
         '-loglevel', 'error',
         '-i', url,
         '-r', '4',                 // 2 frames per second
-        '-vf', 'scale=400:-1',    // resize frames
+        '-vf', 'scale=500:-1',    // resize frames
         '-f', 'image2pipe',
         '-vcodec', 'mjpeg',
         'pipe:1'

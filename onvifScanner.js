@@ -53,7 +53,7 @@ async function listDevices() {
 
         finalDeviceList.push(obj);
     }
-
+//console.log(JSON.stringify(finalDeviceList,null,4))
     return finalDeviceList;
   } 
   catch (err) {

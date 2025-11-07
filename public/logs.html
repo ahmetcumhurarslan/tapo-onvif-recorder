@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Surveillance System - Logs</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="style.css">
@@ -20,6 +21,43 @@
             <button id="refresh" class="refresh-button">Refresh Logs</button>
         </div>
     </div>
-    <script src="logs.js"></script>
+
+    <script>
+        function loadLogs() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/api/logs', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            var logsContainer = document.getElementById('logs');
+                            logsContainer.innerHTML = '';
+                            for (var i = 0; i < data.logs.length; i++) {
+                                var log = data.logs[i];
+                                if (log.trim()) {
+                                    var logEntry = document.createElement('div');
+                                    logEntry.className = 'log-entry';
+                                    logEntry.textContent = log;
+                                    logsContainer.appendChild(logEntry);
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Failed to parse logs:', e);
+                        }
+                    } else {
+                        console.log('Failed to load logs. Status:', xhr.status);
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+            var refreshButton = document.getElementById('refresh');
+            refreshButton.addEventListener('click', loadLogs);
+        });
+    </script>
 </body>
 </html>
