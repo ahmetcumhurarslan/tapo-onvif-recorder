@@ -149,7 +149,7 @@ function createSnapshotWorker(name) {
         '-loglevel', 'error',
         '-i', url,
         '-r', '4',                 // 2 frames per second
-        '-vf', 'scale=300:-1',    // resize frames
+        '-vf', 'scale=400:-1',    // resize frames
         '-f', 'image2pipe',
         '-vcodec', 'mjpeg',
         'pipe:1'
