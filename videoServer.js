@@ -178,7 +178,19 @@ function createSnapshotWorker(name) {
     });
 
     ff.stderr.on('data', (d) => {
-        try { customLog('[video server]', `ffmpeg ${name} stderr: ${d.toString()}`); } catch (e) {}
+        const msg = d.toString();
+
+        customLog('[video server]', `ffmpeg ${name} stderr: ${msg}`);
+
+        if (msg.includes("Server returned 400 Bad Request")) {
+            customLog('[video server]', `FFmpeg fatal error (400) for ${name}, exiting so PM2 can restart...`);
+
+            // kill child process safely
+            ff.kill('SIGKILL');
+
+            // let PM2 restart the app
+            process.exit(1);
+        }
     });
 
     ff.on('close', (code, signal) => {
