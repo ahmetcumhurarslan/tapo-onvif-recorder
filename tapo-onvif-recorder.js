@@ -5,20 +5,69 @@ const onvifScanner = require('./onvifScanner');
 
 const { addPath, deleteAllPaths, getPath } = require("./mediamtxApi");
 
-var cameraControllers = [];
+var cameraControllers = {};
 
 
 process.on('SIGINT', async () => {
     for (const cameraController of cameraControllers) {
-        await cameraController.stop();
+        await cameraControllers[cameraController].stop();
     }
+
     setTimeout(() => {
         process.exit(0);
     }, 1000);
 });
 
+async function addCameraController(device) {
+    var selectedStream = null;
+    for (const stream of device.streams) {
+        if(stream.width * stream.height <= 1280*720){
+            selectedStream = stream.url;
+            break;
+        }
+    }
+
+    //var lowestStream = device.streams[device.streams.length - 1].url;
+    await addPath(device.serialNumber, selectedStream, {
+        sourceOnDemand: true,
+        sourceOnDemandStartTimeout: "10s",
+        sourceOnDemandCloseAfter: "10s"
+    });
 
 
+    var currentPath = "rtsp://127.0.0.1:8554/" + device.serialNumber;
+
+
+    var cameraConfig = {
+        hostname: device.hostname,
+        port: device.port,
+        username: config.onvif.username,
+        password: config.onvif.password,
+        timeout: config.onvif.timeout,
+        name: device.serialNumber,
+        streamUri: currentPath
+    }
+
+    const cameraController = new CameraController(cameraConfig);
+    cameraControllers[device.serialNumber] = cameraController;
+}
+
+async function controlOnlineCameras() {
+    const devices = await onvifScanner.listDevices();
+    for (const device of devices) {
+        var currentSerialNumber = device.serialNumber;
+        if(!cameraControllers[currentSerialNumber]) {
+            addCameraController(device);
+        }
+    }
+}
+
+
+setInterval(() => {
+    controlOnlineCameras();
+}, 60 * 1000);
+
+/*
 (async () => {
 
     const devices = await onvifScanner.listDevices();
@@ -57,13 +106,9 @@ process.on('SIGINT', async () => {
         }
 
         const cameraController = new CameraController(cameraConfig);
-        cameraControllers.push(cameraController);
+        cameraControllers[device.serialNumber] = cameraController;
     }
 
-})();
-
-
-
-
+})();*/
 
 
