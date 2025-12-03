@@ -43,12 +43,20 @@ class CameraController {
                     this.resetConnectionControlInterval();
                     this.log('--> 🚨 Motion detected!');
 
+                    if(this.motionStatusChangedCallback){
+                        this.motionStatusChangedCallback(this.options.name, true);
+                    }
+
                     this.startRecording();
                 }
 
                 this.cam.motionDetectedEndCallback = () => {
                     this.resetConnectionControlInterval();
                     this.log("--> motion detection end...");
+
+                    if(this.motionStatusChangedCallback){
+                        this.motionStatusChangedCallback(this.options.name, false);
+                    }
 
                     this.stopRecording();
                 }
