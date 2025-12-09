@@ -87,17 +87,6 @@ function motionStatusChangedCallback(cameraName, motionDetected) {
     }
     turnOffAllPlugs();
 }
-
-let turnedOn = false;
-setInterval(() => {
-   if(turnedOn){
-       turnOffAllPlugs();
-       turnedOn = false;
-   } else {
-       turnOnAllPlugs();
-       turnedOn = true;
-   } 
-}, 10000);
 //============================
 
 
